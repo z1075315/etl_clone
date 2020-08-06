@@ -18,11 +18,9 @@ steps:
   inputs:
     SourceFolder: '$(Build.SourcesDirectory)'
     Contents: |
-      OptumeraETL/*
-      !.git/**/*
+      **
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
     artifactName: optumeraETL_artifact
-    publishLocation: 'Container'
