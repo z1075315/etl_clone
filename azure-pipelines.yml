@@ -21,7 +21,7 @@ steps:
       **
       !.git/**/*
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
-    CleanTargetFolder: true
+    CleanTargetFolder: false
     preserveTimestamp: true
 - task: PublishBuildArtifacts@1
   inputs:
