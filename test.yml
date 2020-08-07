@@ -9,10 +9,11 @@ trigger:
     - master
   paths:
     include:
-    - OptumeraETL/shell_scripts/*
-    - OptumeraETL/config/*
-    - OptumeraETL/sql/*
-    - OptumeraETL/Postgresql_functions/*
+    - shell_scripts/*
+    - config/*
+    - sql/*
+    - Postgresql_functions/*
+    - python/*
 
 
 pool:
@@ -25,26 +26,26 @@ steps:
     targetType: 'inline'
     script: |
       # Write your commands here
-      for f in $(git diff HEAD HEAD~ --name-only)
+      for f in $(git diff HEAD HEAD~25 --name-only)
       do
-        echo $f
+        echo "$f"
         case "$_" in
-                OptumeraETL/shell_scripts/*)
-                echo this is A
-                cp -r $(Build.SourcesDirectory)/A $(Build.ArtifactStagingDirectory)
+                shell_scripts/*)
+                echo "this is A"
+                #cp -r $(Build.SourcesDirectory)/A $(Build.ArtifactStagingDirectory)
                 ;;
                 
-                OptumeraETL/config/*)
-                echo this is B
-                cp -r $(Build.SourcesDirectory)/B $(Build.ArtifactStagingDirectory)
+                config/*)
+                echo "this is B"
+                #cp -r $(Build.SourcesDirectory)/B $(Build.ArtifactStagingDirectory)
                 ;;
-                OptumeraETL/sql/*)
-                echo this is C
-                cp -r $(Build.SourcesDirectory)/C $(Build.ArtifactStagingDirectory)
+                sql/*)
+                echo "this is C"
+                #cp -r $(Build.SourcesDirectory)/C $(Build.ArtifactStagingDirectory)
                 ;;
-                OptumeraETL/Postgresql_functions/*)
-                echo this is d
-                cp -r $(Build.SourcesDirectory)/D $(Build.ArtifactStagingDirectory)
+                Postgresql_functions/*)
+                echo "this is d"
+                #cp -r $(Build.SourcesDirectory)/D $(Build.ArtifactStagingDirectory)
                 ;;
         esac
       done
