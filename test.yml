@@ -26,21 +26,21 @@ steps:
     targetType: 'inline'
     script:
       # Write your commands here
-      for f in $(git diff --name-only HEAD~20 HEAD --diff-filter=[(A|C|M|R|T)])
+      for f in $(git diff --diff-filter=[(A|C|M|R|T)] --name-only HEAD~20 HEAD)
       do
       echo "$f"
         case "$_" in
                 shell_scripts/*)
                 echo "Change done in shell"
-                #cp -r $(Build.SourcesDirectory)/shell $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/shell $(Build.ArtifactStagingDirectory)
                 ;;
                 config/*)
                 echo "Change done in config"
-                #cp -r $(Build.SourcesDirectory)/config $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/config $(Build.ArtifactStagingDirectory)
                 ;;
                 sql/*)
                 echo "Change done in sql"
-                #cp -r $(Build.SourcesDirectory)/sql $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/sql $(Build.ArtifactStagingDirectory)
                 ;;
                 Postgresql_functions/*)
                 echo "Change done in postgresql"
