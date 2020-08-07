@@ -44,23 +44,12 @@ steps:
                 #cp -r $(Build.SourcesDirectory)/C $(Build.ArtifactStagingDirectory)
                 ;;
                 Postgresql_functions/*)
-                echo "this is d"
+                echo "this is D"
+                #cp -r $(Build.SourcesDirectory)/D $(Build.ArtifactStagingDirectory)
+                ;;
+                python/*)
+                echo "this is E"
                 #cp -r $(Build.SourcesDirectory)/D $(Build.ArtifactStagingDirectory)
                 ;;
         esac
       done
-- task: CopyFiles@2
-  displayName: 'Copy Files to: $(Build.ArtifactStagingDirectory)'
-  inputs:
-    SourceFolder: '$(Build.SourcesDirectory)'
-    Contents: |
-      **
-      !.git/**/*
-    TargetFolder: '$(Build.ArtifactStagingDirectory)'
-    OverWrite: true
-    #CleanTargetFolder: true
-    #preserveTimestamp: false
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    artifactName: optumeraETL_artifact
