@@ -28,23 +28,22 @@ steps:
       # Write your commands here
       for f in $(git diff --name-only HEAD~20 HEAD)
       do
-        echo "$f"
         case "$_" in
                 shell_scripts/*)
                 echo "Change done in shell"
-                #cp -r $(Build.SourcesDirectory)/A $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/shell $(Build.ArtifactStagingDirectory)
                 ;;
                 config/*)
                 echo "Change done in config"
-                #cp -r $(Build.SourcesDirectory)/B $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/config $(Build.ArtifactStagingDirectory)
                 ;;
                 sql/*)
                 echo "Change done in sql"
-                #cp -r $(Build.SourcesDirectory)/C $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/sql $(Build.ArtifactStagingDirectory)
                 ;;
                 Postgresql_functions/*)
                 echo "Change done in postgresql"
-                #cp -r $(Build.SourcesDirectory)/D $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/Postgresql_functions $(Build.ArtifactStagingDirectory)
                 ;;
                 python/*)
                 echo "Change done in python"
@@ -55,4 +54,4 @@ steps:
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'OptumeraETL_Artifact'
+    ArtifactName: 'OptumeraETL_Artifacts'
