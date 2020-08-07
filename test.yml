@@ -4,16 +4,34 @@
 # https://aka.ms/yaml
 
 trigger:
-- master
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - OptumeraETL/shell_scripts/*
+    - OptumeraETL/config/*
+    - OptumeraETL/sql/*
+    - OptumeraETL/Postgresql_functions/*
+
 
 pool:
-  vmImage: 'ubuntu-latest'
-
+  name: Optumera
+  demands: Agent.Name -equals Optumera_Dev_Linux01
+  
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
-
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+- task: CopyFiles@2
+  displayName: 'Copy Files to: $(Build.ArtifactStagingDirectory)'
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)'
+    Contents: |
+      **
+      !.git/**/*
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    OverWrite: true
+    #CleanTargetFolder: true
+    #preserveTimestamp: false
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    artifactName: optumeraETL_artifact
