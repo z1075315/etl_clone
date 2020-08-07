@@ -26,9 +26,9 @@ steps:
     targetType: 'inline'
     script: |
       # Write your commands here
-      for f in $(git diff --diff-filter=ACM HEAD~25 HEAD)
+      for f in $(git diff --diff-filter=CM --name-only HEAD~25 HEAD)
       do
-      echo "$f"
+      echo "$f" 
         case "$_" in
                 shell_scripts/*)
                 echo "Change done in shell"
