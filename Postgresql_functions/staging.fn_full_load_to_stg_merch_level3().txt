@@ -1,0 +1,98 @@
+CREATE OR REPLACE FUNCTION staging.fn_full_load_to_stg_merch_level3()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step              INT;
+    cur_csv_merch_level3 CURSOR FOR
+    SELECT merch_level1_id,
+           merch_level2_id,
+		   merch_level3_id,
+           merch_level3_name,
+           merch_level3_desc,
+           active_f,
+           retailer_merch_level3_id,
+           attr_1,
+           attr_2,
+           attr_3,
+           attr_4,
+           attr_5,
+           attr_6,
+           attr_7,
+           attr_8,
+           attr_9,
+           attr_10,
+           merch_type,
+           delete_f,
+           banner_id,
+           created_user,
+           created_ts,
+           updated_user,
+           updated_ts
+    FROM   staging.csv_merch_level3;
+BEGIN
+    v_step := 1;
+    FOR rec_cur_csv_merch_level3 IN cur_csv_merch_level3 LOOP
+        BEGIN
+            INSERT INTO staging.stg_merch_level3 
+                 (merch_level1_id,
+                  merch_level2_id,
+		          merch_level3_id,
+                  merch_level3_name,
+                  merch_level3_desc,
+                  active_f,
+                  retailer_merch_level3_id,
+                  attr_1,
+                  attr_2,
+                  attr_3,
+                  attr_4,
+                  attr_5,
+                  attr_6,
+                  attr_7,
+                  attr_8,
+                  attr_9,
+                  attr_10,
+                  merch_type,
+                  delete_f,
+                  banner_id,
+                  created_user,
+                  created_ts,
+                  updated_user,
+                  updated_ts)
+            VALUES 
+			     (rec_cur_csv_merch_level3.merch_level1_id,
+                  rec_cur_csv_merch_level3.merch_level2_id,
+		          rec_cur_csv_merch_level3.merch_level3_id,
+                  rec_cur_csv_merch_level3.merch_level3_name,
+                  rec_cur_csv_merch_level3.merch_level3_desc,
+                  rec_cur_csv_merch_level3.active_f,
+                  rec_cur_csv_merch_level3.merch_level3_id,
+                  rec_cur_csv_merch_level3.banner_id,
+                  rec_cur_csv_merch_level3.attr_2,
+                  rec_cur_csv_merch_level3.attr_3,
+                  rec_cur_csv_merch_level3.attr_4,
+                  rec_cur_csv_merch_level3.attr_5,
+                  rec_cur_csv_merch_level3.attr_6,
+                  rec_cur_csv_merch_level3.attr_7,
+                  rec_cur_csv_merch_level3.attr_8,
+                  rec_cur_csv_merch_level3.attr_9,
+                  rec_cur_csv_merch_level3.attr_10,
+                  rec_cur_csv_merch_level3.merch_type,
+                  rec_cur_csv_merch_level3.delete_f,
+                  rec_cur_csv_merch_level3.banner_id,
+                  rec_cur_csv_merch_level3.created_user,
+                  rec_cur_csv_merch_level3.created_ts,
+                  rec_cur_csv_merch_level3.updated_user,
+                  rec_cur_csv_merch_level3.updated_ts);
+	    EXCEPTION 
+            WHEN OTHERS THEN
+                 INSERT INTO staging.error_logs(error_id, error_function_name, error_step_number, error_state, error_msg, primarykeyid) 
+                 VALUES(nextval('staging.error_logs_pk_seq'), 'fn_full_load_to_stg_merch_level3', v_step, sqlstate, sqlerrm, rec_cur_csv_merch_level3.merch_level1_id||'-'||rec_cur_csv_merch_level3.merch_level2_id||'-'||rec_cur_csv_merch_level3.merch_level3_id);
+				 RETURN 1;
+	    END;
+    END LOOP;
+    v_step := 2;
+	RETURN 0;
+END;
+$function$
+;

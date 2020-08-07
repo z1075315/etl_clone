@@ -1,0 +1,100 @@
+CREATE OR REPLACE FUNCTION staging.fn_full_load_to_stg_perf_weekly_merch_level2_no_part()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step            INT;
+    row_type          staging.stg_perf_weekly_merch_level2%rowtype;
+	cur_csv_perf_weekly_merch_level2 CURSOR FOR
+    SELECT   *
+    FROM     staging.csv_perf_weekly_merch_level2;
+	
+BEGIN
+    v_step := 1;
+    FOR rec_cur_csv_perf_weekly_merch_level2 IN cur_csv_perf_weekly_merch_level2 LOOP
+
+        BEGIN
+            row_type := rec_cur_csv_perf_weekly_merch_level2;
+            INSERT INTO staging.stg_perf_weekly_merch_level2
+                 (week_id,
+                  merch_level2_id,
+                  store_id,
+                  linear_footage,
+                  square_footage,
+                  dos,
+                  assrt_cvrg,
+                  kpi_1,
+                  kpi_2,
+                  kpi_3,
+                  kpi_4,
+                  kpi_5,
+                  kpi_6,
+                  kpi_7,
+                  kpi_8,
+                  kpi_9,
+                  kpi_10,
+                  kpi_11,
+                  kpi_12,
+                  kpi_13,
+                  kpi_14,
+                  kpi_15,
+                  kpi_16,
+                  kpi_17,
+                  kpi_18,
+                  kpi_19,
+                  kpi_20,
+                  total_kpi_1,
+                  total_kpi_2,
+                  total_kpi_3,
+                  created_user,
+                  created_ts,
+                  updated_user,
+                  updated_ts) 
+           VALUES(row_type.week_id,
+                  row_type.merch_level2_id,
+                  row_type.store_id,
+                  row_type.linear_footage,
+                  row_type.square_footage,
+                  COALESCE(row_type.dos,0)*100,
+                  COALESCE(row_type.assrt_cvrg,0)*100,
+                  COALESCE(row_type.kpi_1,0),
+                  COALESCE(row_type.kpi_2,0),
+                  COALESCE(row_type.kpi_3,0),
+                  COALESCE(row_type.kpi_4,0),
+                  COALESCE(row_type.kpi_5,0),
+                  COALESCE(row_type.kpi_6,0),
+                  COALESCE(row_type.kpi_7,0),
+                  COALESCE(row_type.kpi_8,0),
+                  COALESCE(row_type.kpi_9,0),
+                  COALESCE(row_type.kpi_10,0),
+                  COALESCE(row_type.kpi_11,0),
+                  COALESCE(row_type.kpi_12,0),
+                  COALESCE(row_type.kpi_13,0),
+                  COALESCE(row_type.kpi_14,0),
+                  COALESCE(row_type.kpi_15,0),
+                  COALESCE(row_type.kpi_16,0),
+                  COALESCE(row_type.kpi_17,0),
+                  COALESCE(row_type.kpi_18,0),
+                  COALESCE(row_type.kpi_19,0),
+                  COALESCE(row_type.kpi_20,0),
+                  COALESCE(row_type.total_kpi_1,0), 
+                  COALESCE(row_type.total_kpi_2,0),
+                  COALESCE(row_type.total_kpi_3,0),
+                  row_type.created_user,
+                  row_type.created_ts,
+                  row_type.updated_user,
+                  row_type.updated_ts);
+        EXCEPTION 
+            WHEN OTHERS THEN
+                 INSERT INTO staging.error_logs(error_id, error_function_name, error_step_number, error_state, error_msg, primarykeyid) 
+                 VALUES(nextval('staging.error_logs_pk_seq'), 'fn_full_load_to_stg_perf_weekly_merch_level2_no_part', v_step, sqlstate, sqlerrm, row_type.week_id||'-'||row_type.merch_level2_id||'-'||row_type.store_id);
+                 RETURN 1;
+        END;
+
+	END LOOP;
+	
+	v_step := 2;
+	RETURN 0;
+END;
+$function$
+;

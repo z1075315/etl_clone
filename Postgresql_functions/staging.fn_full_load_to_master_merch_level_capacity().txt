@@ -1,0 +1,81 @@
+CREATE OR REPLACE FUNCTION staging.fn_full_load_to_master_merch_level_capacity()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step              INT;
+	v_count             INT;		
+	v_week_id           INT;
+	v_week_begin_date   DATE;
+	v_week_end_date     DATE;
+    cur_stg_merch_level_capacity CURSOR FOR
+    SELECT merch_level_id, pog_capacity, footage, created_user, created_ts, updated_user, updated_ts
+    FROM   staging.stg_merch_level_capacity;
+BEGIN
+    v_step := 1;
+	
+	SELECT   max(week_id)
+	INTO     v_week_id
+	FROM     master.perf_weekly_merch_level3;
+	
+	SELECT   week_begin_date, week_end_date
+	INTO     v_week_begin_date, v_week_end_date
+	FROM     master.fiscal_week
+	WHERE    week_id = v_week_id;
+	
+	SELECT   count(1)
+	INTO     v_count
+	FROM     admin.data_period;
+	
+	IF (v_count = 0) THEN
+	     INSERT INTO admin.data_period 
+		        ( data_period_id, etl_data_start_date, etl_data_end_date, created_user, created_ts) 
+		 VALUES ( 1, v_week_begin_date, v_week_end_date, 'SYSTEM', NOW());
+	ELSE 
+         UPDATE   admin.data_period
+         SET      ETL_DATA_START_DATE = v_week_begin_date,
+                  ETL_DATA_END_DATE   = v_week_end_date,
+                  UPDATED_USER        = 'SYSTEM',
+                  UPDATED_TS          = NOW();			 
+	END IF;
+
+	SELECT   COUNT(1)
+	INTO     v_count
+	FROM     staging.stg_merch_level_capacity;
+	
+	IF (v_count = 0) THEN
+	     RETURN 0;
+	END IF;
+	
+	TRUNCATE master.merch_level_capacity RESTART IDENTITY CASCADE;
+	
+    FOR rec_cur_stg_merch_level_capacity IN cur_stg_merch_level_capacity LOOP
+        BEGIN
+            INSERT INTO master.merch_level_capacity 
+			     (merch_level_id,
+	              pog_capacity,
+	              footage,
+	              created_user,
+	              created_ts,
+	              updated_user,
+	              updated_ts)
+            VALUES 
+			     (rec_cur_stg_merch_level_capacity.merch_level_id,
+	              rec_cur_stg_merch_level_capacity.pog_capacity,
+	              rec_cur_stg_merch_level_capacity.footage,
+	              rec_cur_stg_merch_level_capacity.created_user,
+	              rec_cur_stg_merch_level_capacity.created_ts,
+	              rec_cur_stg_merch_level_capacity.updated_user,
+	              rec_cur_stg_merch_level_capacity.updated_ts);
+	    EXCEPTION 
+            WHEN OTHERS THEN
+                 INSERT INTO staging.error_logs(error_id, error_function_name, error_step_number, error_state, error_msg, primarykeyid) 
+                 VALUES(nextval('staging.error_logs_pk_seq'), 'fn_full_load_to_master_merch_level_capacity', v_step, sqlstate, sqlerrm, rec_cur_stg_merch_level_capacity.merch_level_id);
+				 RETURN 1;
+	    END;
+    END LOOP;
+    v_step := 2;
+	RETURN 0;
+END;
+$function$
+;

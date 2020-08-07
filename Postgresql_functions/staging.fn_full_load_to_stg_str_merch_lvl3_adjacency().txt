@@ -1,0 +1,86 @@
+CREATE OR REPLACE FUNCTION staging.fn_full_load_to_stg_str_merch_lvl3_adjacency()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step              INT;
+	v_count             INT;
+    cur_csv_str_merch_lvl3_adjacency CURSOR FOR
+    SELECT ss.store_id,
+	       smla.merch_level3_id,
+	       smla.footage,
+	       smla.aisle,
+	       smla.aisle_side_valley,
+	       smla.valley,
+	       smla.section_id,
+	       smla.left_merch_level3_id,
+	       smla.right_merch_level3_id, 
+		   smla.created_user, 
+		   smla.created_ts, 
+		   smla.updated_user, 
+		   smla.updated_ts
+    FROM   staging.csv_str_merch_lvl3_adjacency smla,
+	       staging.stg_store ss
+    WHERE  smla.store_id  = ss.store_id
+	AND    ss.banner_id  != '5';
+BEGIN
+    v_step := 1;
+	
+	SELECT   COUNT(1)
+	INTO     v_count
+	FROM     staging.csv_str_merch_lvl3_adjacency;
+	
+	IF (v_count = 0) THEN
+	     RETURN 0;
+	END IF;
+	
+	--TRUNCATE staging.stg_str_merch_lvl3_adjacency RESTART IDENTITY CASCADE;
+	/* Adding this avoid deleting WNZ Stores */
+	
+	DELETE   FROM  staging.stg_str_merch_lvl3_adjacency a
+    USING    staging.stg_store b
+    WHERE    a.store_id = b.store_id
+    AND      b.banner_id != '5';
+	
+    FOR rec_cur_csv_str_merch_lvl3_adjacency IN cur_csv_str_merch_lvl3_adjacency LOOP
+        BEGIN
+            INSERT INTO staging.stg_str_merch_lvl3_adjacency 
+			     (store_id,
+	              merch_level3_id,
+	              footage,
+	              aisle,
+	              aisle_side_valley,
+	              valley,
+	              section_id,
+	              left_merch_level3_id,
+	              right_merch_level3_id, 
+		          created_user, 
+		          created_ts, 
+		          updated_user, 
+		          updated_ts)
+            VALUES 
+			     (rec_cur_csv_str_merch_lvl3_adjacency.store_id,
+	              rec_cur_csv_str_merch_lvl3_adjacency.merch_level3_id,
+	              rec_cur_csv_str_merch_lvl3_adjacency.footage,
+	              rec_cur_csv_str_merch_lvl3_adjacency.aisle,
+	              rec_cur_csv_str_merch_lvl3_adjacency.aisle_side_valley,
+	              rec_cur_csv_str_merch_lvl3_adjacency.valley,
+	              rec_cur_csv_str_merch_lvl3_adjacency.section_id,
+	              rec_cur_csv_str_merch_lvl3_adjacency.left_merch_level3_id,
+	              rec_cur_csv_str_merch_lvl3_adjacency.right_merch_level3_id, 
+		          rec_cur_csv_str_merch_lvl3_adjacency.created_user, 
+		          rec_cur_csv_str_merch_lvl3_adjacency.created_ts, 
+		          rec_cur_csv_str_merch_lvl3_adjacency.updated_user, 
+		          rec_cur_csv_str_merch_lvl3_adjacency.updated_ts);
+	    EXCEPTION 
+            WHEN OTHERS THEN
+                 INSERT INTO staging.error_logs(error_id, error_function_name, error_step_number, error_state, error_msg, primarykeyid) 
+                 VALUES(nextval('staging.error_logs_pk_seq'), 'fn_full_load_to_stg_str_merch_lvl3_adjacency', v_step, sqlstate, sqlerrm, rec_cur_csv_str_merch_lvl3_adjacency.store_id||'-'||rec_cur_csv_str_merch_lvl3_adjacency.merch_level3_id);
+				 RETURN 1;
+	    END;
+    END LOOP;
+    v_step := 2;
+	RETURN 0;
+END;
+$function$
+;

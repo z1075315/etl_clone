@@ -1,0 +1,36 @@
+CREATE OR REPLACE FUNCTION staging.fn_preprocessor_master_full_data()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step              INT;
+    v_present           INT;
+BEGIN
+    v_step := 0;
+	
+	TRUNCATE master.str_merch_lvl3_skuefficiency RESTART IDENTITY CASCADE;
+	TRUNCATE master.str_merch_lvl3_adjacency RESTART IDENTITY CASCADE;
+	TRUNCATE master.str_merch_lvl3_planogram RESTART IDENTITY CASCADE;
+	TRUNCATE master.str_merch_lvl2_planogram RESTART IDENTITY CASCADE;
+	TRUNCATE master.str_merch_lvl1_planogram RESTART IDENTITY CASCADE;
+	TRUNCATE master.store_demographics RESTART IDENTITY CASCADE;
+	TRUNCATE master.perf_weekly_merch_level3 RESTART IDENTITY CASCADE;
+	TRUNCATE master.perf_weekly_merch_level2 RESTART IDENTITY CASCADE;
+	TRUNCATE master.perf_weekly_merch_level1 RESTART IDENTITY CASCADE;
+	TRUNCATE master.merch_level_capacity RESTART IDENTITY CASCADE;
+	TRUNCATE master.merch_level3 RESTART IDENTITY CASCADE;
+	TRUNCATE master.merch_level2 RESTART IDENTITY CASCADE;
+	TRUNCATE master.merch_level1 RESTART IDENTITY CASCADE;
+	TRUNCATE master.store RESTART IDENTITY CASCADE;
+	TRUNCATE master.fiscal_week RESTART IDENTITY CASCADE;
+	--DELETE FROM product_config.banner;
+	v_step := 1;    
+	RETURN 0;	
+EXCEPTION 
+    WHEN OTHERS THEN
+         INSERT INTO staging.error_logs(error_id, error_function_name, error_step_number, error_state, error_msg, primarykeyid) 
+         VALUES(nextval('staging.error_logs_pk_seq'), 'fn_preprocessor_master_full_data', v_step, sqlstate, sqlerrm, v_step);
+		 RETURN 1;
+END;
+$function$
+;

@@ -1,0 +1,28 @@
+CREATE OR REPLACE FUNCTION staging.fn_full_load_to_master_perf_weekly_merch_level2()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step     INT;
+	v_error_id INT;
+    status     TEXT := 'NO_PARTITION'; /* Values are NO_PARTITION or PARTITION */
+	
+BEGIN
+    v_step := 1;
+    IF (status = 'NO_PARTITION') THEN
+	     SELECT   staging.fn_full_load_to_master_perf_weekly_merch_level2_no_part() 
+	     INTO     v_error_id; 
+	ELSIF (status = 'PARTITION') THEN
+	     SELECT   staging.fn_full_load_to_master_perf_weekly_merch_level2_partition() 
+	     INTO     v_error_id; 
+	END IF;
+	
+	IF (v_error_id = 1) THEN
+	     RETURN 1;
+	END IF;
+	
+	v_step := 2;
+	RETURN 0;
+END;
+$function$
+;

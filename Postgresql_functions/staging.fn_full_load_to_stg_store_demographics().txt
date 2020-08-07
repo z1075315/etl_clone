@@ -1,0 +1,42 @@
+CREATE OR REPLACE FUNCTION staging.fn_full_load_to_stg_store_demographics()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step              INT;
+	v_count             INT;
+	rec_store_demo  master.store_demographics%rowtype;
+	
+    cur_csv_store_demographics CURSOR FOR
+    SELECT *
+    FROM   staging.csv_store_demographics;
+BEGIN
+    v_step := 1;
+	
+	SELECT   COUNT(1)
+	INTO     v_count
+	FROM     staging.csv_store_demographics;
+	
+	IF (v_count = 0) THEN
+	     RETURN 0;
+	END IF;
+	
+	TRUNCATE staging.stg_store_demographics RESTART IDENTITY CASCADE;
+	
+    FOR rec_cur_csv_store_demographics IN cur_csv_store_demographics LOOP
+        BEGIN
+		    rec_store_demo := rec_cur_csv_store_demographics;
+            INSERT INTO staging.stg_store_demographics 
+			VALUES (rec_store_demo.*);
+	    EXCEPTION 
+            WHEN OTHERS THEN
+                 INSERT INTO staging.error_logs(error_id, error_function_name, error_step_number, error_state, error_msg, primarykeyid) 
+                 VALUES(nextval('staging.error_logs_pk_seq'), 'fn_full_load_to_stg_store_demographics', v_step, sqlstate, sqlerrm, rec_cur_csv_store_demographics.store_id);
+				 RETURN 1;
+	    END;
+    END LOOP;
+    v_step := 2;
+	RETURN 0;
+END;
+$function$
+;

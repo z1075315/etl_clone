@@ -1,0 +1,68 @@
+CREATE OR REPLACE FUNCTION staging.fn_full_load_to_master_perf_weekly_merch_level3_partition()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step            INT;
+	v_max_store_id    INT4;
+    v_partition_name  TEXT := 'perf_weekly_merch_level3_';
+	store_range_start INT;
+	store_range_end   INT;
+    row_type          master.perf_weekly_merch_level3%rowtype;
+	cur_stg_perf_weekly_merch_level3 CURSOR(v_store_start_range INT4, v_store_end_range INT4) FOR
+    SELECT   *
+    FROM     staging.stg_perf_weekly_merch_level3
+	WHERE    store_id BETWEEN v_store_start_range AND v_store_end_range;
+	
+BEGIN
+    v_step := 1;
+	SELECT  max(store_id)
+	INTO    v_max_store_id
+	FROM    master.store;
+	
+	FOR v_counter IN 1..((v_max_store_id/500)+1) LOOP
+	    IF (v_counter = 1) THEN
+		     store_range_start := 1;
+		     store_range_end   := 500;
+	    ELSE
+		     store_range_start := ((v_counter-1)*500)+1;
+		     store_range_end   := v_counter*500;
+		END IF;
+		
+		IF NOT EXISTS
+           (SELECT 1
+            FROM   information_schema.tables 
+            WHERE  table_name = v_partition_name||v_counter) THEN
+
+ 			 EXECUTE FORMAT(E'CREATE TABLE master.%I (CHECK ( store_id >= ''%s'' AND store_id <= ''%s'')) INHERITS (master.perf_weekly_merch_level3)', v_partition_name||v_counter, store_range_start,store_range_end);
+			 EXECUTE FORMAT(E'CREATE INDEX %s_store_ids_idx ON master.%s  (store_id)',  v_partition_name||v_counter, v_partition_name||v_counter);
+			 EXECUTE FORMAT(E'CREATE INDEX %s_week_id_idx ON master.%s  (week_id)',  v_partition_name||v_counter, v_partition_name||v_counter);
+			 EXECUTE FORMAT(E'CREATE INDEX %s_merch_level3_id_idx ON master.%s  (merch_level3_id)',  v_partition_name||v_counter, v_partition_name||v_counter);
+			 EXECUTE FORMAT(E'CREATE INDEX %s_store_week_ids_idx ON master.%s  (store_id,week_id)',  v_partition_name||v_counter, v_partition_name||v_counter);
+			 EXECUTE FORMAT(E'CREATE INDEX %s_merch_level3_week_ids_idx ON master.%s  (merch_level3_id,week_id)',  v_partition_name||v_counter, v_partition_name||v_counter);
+			 EXECUTE FORMAT(E'CREATE INDEX %s_merch_level3_store_ids_idx ON master.%s  (merch_level3_id,store_id)',  v_partition_name||v_counter, v_partition_name||v_counter);
+			 
+		END IF;
+
+        FOR rec_cur_stg_perf_weekly_merch_level3 IN cur_stg_perf_weekly_merch_level3(store_range_start, store_range_end) LOOP
+
+            BEGIN
+                row_type := rec_cur_stg_perf_weekly_merch_level3;
+                EXECUTE FORMAT('INSERT INTO master.%I VALUES(($1).*) ', v_partition_name||v_counter) USING row_type;
+            EXCEPTION 
+                WHEN OTHERS THEN
+                     INSERT INTO staging.error_logs(error_id, error_function_name, error_step_number, error_state, error_msg, primarykeyid) 
+                     VALUES(nextval('staging.error_logs_pk_seq'), 'fn_full_load_to_master_perf_weekly_merch_level3_partition', v_step, sqlstate, sqlerrm, row_type.week_id||'-'||row_type.merch_level3_id||'-'||row_type.store_id);
+                     RETURN 1;
+            END;
+
+		END LOOP;		
+	END LOOP;
+	
+	EXECUTE FORMAT(E'CREATE TRIGGER trg_perf_weekly_merch_level3 BEFORE INSERT ON master.perf_weekly_merch_level3 FOR EACH ROW EXECUTE PROCEDURE master.trg_perf_weekly_merch_level3()');
+	
+	v_step := 2;
+	RETURN 0;
+END;
+$function$
+;

@@ -1,0 +1,59 @@
+CREATE OR REPLACE FUNCTION staging.fn_full_load_to_master_str_merch_lvl3_skuefficiency()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step              INT;
+	v_count             INT;
+    cur_stg_str_merch_lvl3_skuefficiency CURSOR FOR
+    SELECT store_id,
+	       merch_level3_id,
+	       sku_efficiency,
+		   created_user, 
+		   created_ts, 
+		   updated_user, 
+		   updated_ts
+    FROM   staging.stg_str_merch_lvl3_skuefficiency;
+BEGIN
+    v_step := 1;
+	
+	SELECT   COUNT(1)
+	INTO     v_count
+	FROM     staging.stg_str_merch_lvl3_skuefficiency;
+	
+	IF (v_count = 0) THEN
+	     RETURN 0;
+	END IF;
+	
+	TRUNCATE master.str_merch_lvl3_skuefficiency RESTART IDENTITY CASCADE;
+	
+    FOR rec_cur_stg_str_merch_lvl3_skuefficiency IN cur_stg_str_merch_lvl3_skuefficiency LOOP
+        BEGIN
+            INSERT INTO master.str_merch_lvl3_skuefficiency 
+			     (store_id,
+	              merch_level3_id,
+	              sku_efficiency,
+	              created_user, 
+		          created_ts, 
+		          updated_user, 
+		          updated_ts)
+            VALUES 
+			     (rec_cur_stg_str_merch_lvl3_skuefficiency.store_id,
+	              rec_cur_stg_str_merch_lvl3_skuefficiency.merch_level3_id,
+	              rec_cur_stg_str_merch_lvl3_skuefficiency.sku_efficiency,
+				  rec_cur_stg_str_merch_lvl3_skuefficiency.created_user, 
+		          rec_cur_stg_str_merch_lvl3_skuefficiency.created_ts, 
+		          rec_cur_stg_str_merch_lvl3_skuefficiency.updated_user, 
+		          rec_cur_stg_str_merch_lvl3_skuefficiency.updated_ts);
+	    EXCEPTION 
+            WHEN OTHERS THEN
+                 INSERT INTO staging.error_logs(error_id, error_function_name, error_step_number, error_state, error_msg, primarykeyid) 
+                 VALUES(nextval('staging.error_logs_pk_seq'), 'fn_full_load_to_master_str_merch_lvl3_skuefficiency', v_step, sqlstate, sqlerrm, rec_cur_stg_str_merch_lvl3_skuefficiency.store_id||'-'||rec_cur_stg_str_merch_lvl3_skuefficiency.merch_level3_id);
+				 RETURN 1;
+	    END;
+    END LOOP;
+    v_step := 2;
+	RETURN 0;
+END;
+$function$
+;

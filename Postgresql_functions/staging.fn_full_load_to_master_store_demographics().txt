@@ -1,0 +1,67 @@
+CREATE OR REPLACE FUNCTION staging.fn_full_load_to_master_store_demographics()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step              INT;
+	v_count             INT;
+	rec_store_demo  master.store_demographics%rowtype;
+    cur_stg_store_demographics CURSOR FOR
+    SELECT *
+    FROM   staging.stg_store_demographics;
+BEGIN
+    v_step := 1;
+	
+	SELECT   COUNT(1)
+	INTO     v_count
+	FROM     staging.csv_store_demographics;
+	
+	IF (v_count = 0) THEN
+	     RETURN 0;
+	END IF;
+	
+	TRUNCATE master.store_demographics RESTART IDENTITY CASCADE;
+	TRUNCATE master.store_weather RESTART IDENTITY CASCADE;
+	
+    FOR rec_cur_stg_store_demographics IN cur_stg_store_demographics LOOP
+        BEGIN
+		    
+			rec_store_demo := rec_cur_stg_store_demographics;
+            
+			INSERT INTO master.store_demographics 
+            VALUES (rec_store_demo.*);
+
+            INSERT INTO master.store_weather 
+			       (store_id, DP_VAR_1, DP_VAR_2, DP_VAR_3, DP_VAR_4, DP_VAR_5, DP_VAR_6, DP_VAR_7, DP_VAR_8,
+                    DP_VAR_9, DP_VAR_10, DP_VAR_11, DP_VAR_12, DP_VAR_13, DP_VAR_14, DP_VAR_15, DP_VAR_16,
+                    DP_VAR_17, DP_VAR_18, DP_VAR_19, DP_VAR_20, DP_VAR_21, DP_VAR_22, DP_VAR_23, DP_VAR_24,
+                    DP_VAR_25, DP_VAR_26, DP_VAR_27, DP_VAR_28, DP_VAR_29, DP_VAR_30, DP_VAR_31, DP_VAR_32,
+                    DP_VAR_33, DP_VAR_34, DP_VAR_35, DP_VAR_36, DP_VAR_37, DP_VAR_38, DP_VAR_39, DP_VAR_40,
+                    DP_VAR_41, DP_VAR_42, DP_VAR_43, DP_VAR_44, DP_VAR_45, DP_VAR_46, DP_VAR_47, DP_VAR_48, 
+					created_user, created_ts)
+            VALUES (rec_store_demo.STORE_ID, rec_store_demo.DP_VAR_232, rec_store_demo.DP_VAR_233, rec_store_demo.DP_VAR_234,
+                    rec_store_demo.DP_VAR_235, rec_store_demo.DP_VAR_236, rec_store_demo.DP_VAR_237, rec_store_demo.DP_VAR_238,
+                    rec_store_demo.DP_VAR_239, rec_store_demo.DP_VAR_240, rec_store_demo.DP_VAR_241, rec_store_demo.DP_VAR_242,
+                    rec_store_demo.DP_VAR_243, rec_store_demo.DP_VAR_244, rec_store_demo.DP_VAR_245, rec_store_demo.DP_VAR_246,
+                    rec_store_demo.DP_VAR_247, rec_store_demo.DP_VAR_248, rec_store_demo.DP_VAR_249, rec_store_demo.DP_VAR_250,
+                    rec_store_demo.DP_VAR_251, rec_store_demo.DP_VAR_252, rec_store_demo.DP_VAR_253, rec_store_demo.DP_VAR_254,
+                    rec_store_demo.DP_VAR_255, rec_store_demo.DP_VAR_256, rec_store_demo.DP_VAR_257, rec_store_demo.DP_VAR_258,
+                    rec_store_demo.DP_VAR_259, rec_store_demo.DP_VAR_260, rec_store_demo.DP_VAR_261, rec_store_demo.DP_VAR_262,
+                    rec_store_demo.DP_VAR_263, rec_store_demo.DP_VAR_264, rec_store_demo.DP_VAR_265, rec_store_demo.DP_VAR_266,
+                    rec_store_demo.DP_VAR_267, rec_store_demo.DP_VAR_268, rec_store_demo.DP_VAR_269, rec_store_demo.DP_VAR_270,
+                    rec_store_demo.DP_VAR_271, rec_store_demo.DP_VAR_272, rec_store_demo.DP_VAR_273, rec_store_demo.DP_VAR_274,
+                    rec_store_demo.DP_VAR_275, rec_store_demo.DP_VAR_276, rec_store_demo.DP_VAR_277, rec_store_demo.DP_VAR_278,
+                    rec_store_demo.DP_VAR_279, 'SYSTEM', NOW());	
+			
+	    EXCEPTION 
+            WHEN OTHERS THEN
+                 INSERT INTO staging.error_logs(error_id, error_function_name, error_step_number, error_state, error_msg, primarykeyid) 
+                 VALUES(nextval('staging.error_logs_pk_seq'), 'fn_full_load_to_master_store_demographics', v_step, sqlstate, sqlerrm, rec_cur_stg_store_demographics.store_id);
+				 RETURN 1;
+	    END;
+    END LOOP;
+    v_step := 2;
+	RETURN 0;
+END;
+$function$
+;

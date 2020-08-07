@@ -1,0 +1,45 @@
+CREATE OR REPLACE FUNCTION staging.fn_full_load_to_stg_fiscal_week()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step              INT;
+    cur_csv_fiscal_week CURSOR FOR
+    SELECT week_id, "year", week_begin_date, week_end_date, week_of_year, created_user, created_ts, updated_user, updated_ts
+    FROM   staging.csv_fiscal_week;
+BEGIN
+    v_step := 1;
+    FOR rec_cur_csv_fiscal_week IN cur_csv_fiscal_week LOOP
+        BEGIN
+            INSERT INTO staging.stg_fiscal_week 
+			     (week_id,
+	              "year",
+	              week_begin_date,
+	              week_end_date,
+	              week_of_year,
+	              created_user,
+	              created_ts,
+	              updated_user,
+	              updated_ts)
+            VALUES 
+			     (rec_cur_csv_fiscal_week.week_id,
+	              rec_cur_csv_fiscal_week."year",
+	              rec_cur_csv_fiscal_week.week_begin_date,
+	              rec_cur_csv_fiscal_week.week_end_date,
+	              rec_cur_csv_fiscal_week.week_of_year,
+	              rec_cur_csv_fiscal_week.created_user,
+	              rec_cur_csv_fiscal_week.created_ts,
+	              rec_cur_csv_fiscal_week.updated_user,
+	              rec_cur_csv_fiscal_week.updated_ts);
+	    EXCEPTION 
+            WHEN OTHERS THEN
+                 INSERT INTO staging.error_logs(error_id, error_function_name, error_step_number, error_state, error_msg, primarykeyid) 
+                 VALUES(nextval('staging.error_logs_pk_seq'), 'fn_full_load_to_stg_fiscal_week', v_step, sqlstate, sqlerrm, rec_cur_csv_fiscal_week.week_id);
+				 RETURN 1;
+	    END;
+    END LOOP;
+    v_step := 2;
+	RETURN 0;
+END;
+$function$
+;

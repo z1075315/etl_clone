@@ -1,0 +1,32 @@
+CREATE OR REPLACE FUNCTION staging.fn_full_load_to_master_perf_weekly_merch_level1_no_part()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step            INT;
+    row_type          master.perf_weekly_merch_level1%rowtype;
+	cur_stg_perf_weekly_merch_level1 CURSOR FOR
+    SELECT   *
+    FROM     staging.stg_perf_weekly_merch_level1;
+	
+BEGIN
+    v_step := 1;
+    FOR rec_cur_stg_perf_weekly_merch_level1 IN cur_stg_perf_weekly_merch_level1 LOOP
+
+        BEGIN
+            row_type := rec_cur_stg_perf_weekly_merch_level1;
+            INSERT INTO master.perf_weekly_merch_level1 VALUES(row_type.*);
+        EXCEPTION 
+            WHEN OTHERS THEN
+                 INSERT INTO staging.error_logs(error_id, error_function_name, error_step_number, error_state, error_msg, primarykeyid) 
+                 VALUES(nextval('staging.error_logs_pk_seq'), 'fn_full_load_to_master_perf_weekly_merch_level1_no_part', v_step, sqlstate, sqlerrm, row_type.week_id||'-'||row_type.merch_level1_id||'-'||row_type.store_id);
+                 RETURN 1;
+        END;
+
+	END LOOP;
+	
+	v_step := 2;
+	RETURN 0;
+END;
+$function$
+;

@@ -1,0 +1,280 @@
+CREATE OR REPLACE FUNCTION staging.fn_merch_level_changes()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step                    INT;
+	v_merch_name              VARCHAR;
+    v_COUNT                   INT;
+	v_dup_store_COUNT         INT;
+	v_super_metro_store_COUNT INT;
+
+    cur_ml1_dup_names CURSOR IS
+    SELECT   ml.merch_level1_name, ml.banner_id, COUNT(1)
+    FROM     master.merch_level1 ml
+    GROUP BY ml.merch_level1_name, ml.banner_id 
+    HAVING COUNT(1) > 1;
+
+    cur_ml2_dup_names CURSOR IS
+    SELECT   ml.merch_level2_name, ml.banner_id, COUNT(1)
+    FROM     master.merch_level2 ml
+    GROUP BY ml.merch_level2_name, ml.banner_id 
+    HAVING COUNT(1) > 1;
+
+    cur_ml3_dup_names CURSOR IS
+    SELECT   ml.merch_level3_name, ml.banner_id, COUNT(1)
+    FROM     master.merch_level3 ml
+    GROUP BY ml.merch_level3_name, ml.banner_id 
+    HAVING COUNT(1) > 1;
+   
+    cur_ml1_names CURSOR(v_ml_name VARCHAR) FOR
+    SELECT   ml.merch_level1_id, ml.merch_level1_name, b.banner_name
+    FROM     master.merch_level1 ml, product_config.banner b
+    WHERE    ml.banner_id = b.banner_id
+    AND      ml.merch_level1_name = v_ml_name;
+
+    cur_ml2_names CURSOR(v_ml_name VARCHAR) FOR
+    SELECT   ml.merch_level2_id, ml.merch_level2_name, ml1.merch_level1_name
+    FROM     master.merch_level2 ml, master.merch_level1 ml1
+    WHERE    ml.merch_level1_id = ml1.merch_level1_id
+    AND      ml.merch_level2_name = v_ml_name;
+
+    cur_ml3_names CURSOR(v_ml_name VARCHAR) FOR
+    SELECT   ml.merch_level3_id, ml.merch_level3_name, ml2.merch_level2_name
+    FROM     master.merch_level3 ml, master.merch_level2 ml2
+    WHERE    ml.merch_level2_id = ml2.merch_level2_id
+    AND      ml.merch_level3_name = v_ml_name;
+
+	cur_ml1_dup_banner_merch_names CURSOR IS
+	SELECT   ml.banner_id, ml.merch_level1_id, ml.merch_level1_name
+    FROM     (SELECT   merch_level1_name, COUNT(1)
+              FROM     master.merch_level1 ml
+              WHERE    active_f = 'Y'
+              GROUP BY merch_level1_name
+              HAVING   COUNT(1) > 1) AS a,
+             master.merch_level1 ml
+    WHERE    a.merch_level1_name = ml.merch_level1_name;
+	
+	cur_ml2_dup_banner_merch_names CURSOR IS
+	SELECT   ml.banner_id, ml.merch_level2_id, ml.merch_level2_name
+    FROM     (SELECT   merch_level2_name, COUNT(1)
+              FROM     master.merch_level2 ml
+              WHERE    active_f = 'Y'
+              GROUP BY merch_level2_name
+              HAVING   COUNT(1) > 1) AS a,
+             master.merch_level2 ml
+    WHERE    a.merch_level2_name = ml.merch_level2_name;
+    
+	cur_ml3_dup_banner_merch_names CURSOR IS
+	SELECT   ml.banner_id, ml.merch_level3_id, ml.merch_level3_name
+    FROM     (SELECT   merch_level3_name, COUNT(1)
+              FROM     master.merch_level3 ml
+              WHERE    active_f = 'Y'
+              GROUP BY merch_level3_name
+              HAVING   COUNT(1) > 1) AS a,
+             master.merch_level3 ml
+    WHERE    a.merch_level3_name = ml.merch_level3_name;
+    
+BEGIN
+
+    v_step := 1;
+    
+	/* Below section is to remove duplicate merch names withIN banners  */    	
+	
+    FOR rec_cur_ml1_dup_names IN cur_ml1_dup_names LOOP
+        FOR rec_cur_ml1_names IN cur_ml1_names(rec_cur_ml1_dup_names.merch_level1_name) LOOP
+		    IF (rec_cur_ml1_names.merch_level1_name = 'BLANK') THEN
+		       v_merch_name := rec_cur_ml1_names.banner_name||' - '||rec_cur_ml1_names.merch_level1_name;
+            ELSE
+                v_merch_name := rec_cur_ml1_names.banner_name||' - '||rec_cur_ml1_names.merch_level1_name;
+            END IF;
+		         
+	        UPDATE master.merch_level1
+	        SET    merch_level1_name = v_merch_name
+		    WHERE  merch_level1_id   = rec_cur_ml1_names.merch_level1_id;
+           
+		END LOOP;
+	END LOOP;
+
+    FOR rec_cur_ml2_dup_names IN cur_ml2_dup_names LOOP
+        FOR rec_cur_ml2_names IN cur_ml2_names(rec_cur_ml2_dup_names.merch_level2_name) LOOP
+		    IF (rec_cur_ml2_names.merch_level2_name = 'BLANK') THEN
+		         v_merch_name := rec_cur_ml2_names.merch_level1_name;
+		         
+		         SELECT COUNT(1)
+		         INTO   v_COUNT
+		         FROM   master.merch_level2 ml
+		         WHERE  ml.merch_level2_name = v_merch_name;
+		         
+		         IF (v_COUNT > 0) THEN
+                      v_merch_name := rec_cur_ml2_names.merch_level1_name||' - '||rec_cur_ml2_names.merch_level2_name;
+		         END IF;
+		    ELSE
+		         v_merch_name := rec_cur_ml2_names.merch_level1_name||' - '||rec_cur_ml2_names.merch_level2_name;
+            END IF;           
+		         
+		    UPDATE master.merch_level2
+		    SET    merch_level2_name = v_merch_name
+		    WHERE  merch_level2_id   = rec_cur_ml2_names.merch_level2_id;
+
+		END LOOP;
+	END LOOP;
+
+    FOR rec_cur_ml3_dup_names IN cur_ml3_dup_names LOOP
+        FOR rec_cur_ml3_names IN cur_ml3_names(rec_cur_ml3_dup_names.merch_level3_name) LOOP
+		    IF (rec_cur_ml3_names.merch_level3_name = 'BLANK') THEN
+		         v_merch_name := rec_cur_ml3_names.merch_level2_name;
+
+		         SELECT COUNT(1)
+		         INTO   v_COUNT
+		         FROM   master.merch_level3 ml
+		         WHERE  ml.merch_level3_name = v_merch_name;
+		         
+		         IF (v_COUNT > 0) THEN
+                      v_merch_name := rec_cur_ml3_names.merch_level2_name||' - '||rec_cur_ml3_names.merch_level3_name;
+		         END IF;
+		        
+		        
+		    ELSE
+                 v_merch_name := rec_cur_ml3_names.merch_level2_name||' - '||rec_cur_ml3_names.merch_level3_name;
+            END IF;
+           
+            UPDATE master.merch_level3
+		    SET    merch_level3_name = v_merch_name
+		    WHERE  merch_level3_id   = rec_cur_ml3_names.merch_level3_id;
+		END LOOP;
+	END LOOP;
+
+    v_step := 2;
+
+    /* Below section is to remove duplicate store number issue */    	
+    SELECT   COUNT(1)
+    INTO     v_dup_store_COUNT
+    FROM     (SELECT   store_number, COUNT(1)
+              FROM     master.store s
+              WHERE    active_F = 'Y'
+              GROUP BY store_number 
+			  HAVING   COUNT(1)>1) AS a;
+    
+    SELECT   COUNT(1)
+    INTO     v_super_metro_store_COUNT
+    FROM     (SELECT   store_number, COUNT(1)
+              FROM     master.store s
+              WHERE    active_F = 'Y'
+              GROUP BY store_number 
+	          HAVING   COUNT(1)>1) AS a
+    WHERE    EXISTS (SELECT   1 
+	                 FROM     master.store ss 
+					 WHERE    a.store_number = ss.store_number 
+					 AND      ss.banner_id IN (1, 2));
+    
+    IF (v_dup_store_COUNT = v_super_metro_store_COUNT and v_dup_store_COUNT > 0) THEN
+         UPDATE  master.store 
+         SET     active_f = 'N', updated_user = 'SYSTEM', updated_ts = NOW()
+         WHERE   banner_id  = 2 
+         AND     store_number IN (SELECT   store_number
+                                  FROM     (SELECT   store_number, COUNT(1)
+                                            FROM     master.store s
+                                            WHERE    active_F = 'Y'
+                                            GROUP BY store_number 
+                                            HAVING   COUNT(1)>1) AS a
+                                  WHERE    EXISTS (SELECT   1 
+                                                   FROM     master.store ss 
+                                                   WHERE    a.store_number = ss.store_number 
+                                                   AND      ss.banner_id IN (1, 2)));
+    END IF;
+
+    v_step := 3;
+	
+	/* Below section is to remove duplicate merch names withIN banners  */    	
+
+    /* 24 records */
+    FOR  rec_merch_level1 IN cur_ml1_dup_banner_merch_names LOOP
+    
+        IF (rec_merch_level1.banner_id = 2) THEN 
+             UPDATE  master.merch_level1
+             SET     merch_level1_name = 'BWS - '||merch_level1_name, updated_user = 'SYSTEM', updated_ts = NOW()
+             WHERE   merch_level1_id   = rec_merch_level1.merch_level1_id
+             AND     banner_id         = rec_merch_level1.banner_id;
+        ELSEIF (rec_merch_level1.banner_id = 3) THEN
+             UPDATE  master.merch_level1
+             SET     merch_level1_name = 'DMS - '||merch_level1_name, updated_user = 'SYSTEM', updated_ts = NOW()
+             WHERE   merch_level1_id   = rec_merch_level1.merch_level1_id
+             AND     banner_id         = rec_merch_level1.banner_id;
+        ELSEIF (rec_merch_level1.banner_id = 4) THEN
+             UPDATE  master.merch_level1
+             SET     merch_level1_name = 'MET - '||merch_level1_name, updated_user = 'SYSTEM', updated_ts = NOW()
+             WHERE   merch_level1_id   = rec_merch_level1.merch_level1_id
+             AND     banner_id         = rec_merch_level1.banner_id;
+        ELSEIF (rec_merch_level1.banner_id = 5) THEN
+             UPDATE  master.merch_level1
+             SET     merch_level1_name = 'WNZ - '||merch_level1_name, updated_user = 'SYSTEM', updated_ts = NOW()
+             WHERE   merch_level1_id   = rec_merch_level1.merch_level1_id
+             AND     banner_id         = rec_merch_level1.banner_id;
+        END IF;
+    END LOOP;
+    
+    /* (51, 36, 40, 72) */
+    FOR  rec_merch_level2 IN cur_ml2_dup_banner_merch_names LOOP
+    
+        IF (rec_merch_level2.banner_id = 2) THEN 
+             UPDATE  master.merch_level2
+             SET     merch_level2_name = 'BWS - '||merch_level2_name, updated_user = 'SYSTEM', updated_ts = NOW()
+             WHERE   merch_level2_id   = rec_merch_level2.merch_level2_id
+             AND     banner_id         = rec_merch_level2.banner_id;
+        ELSEIF (rec_merch_level2.banner_id = 3) THEN
+             UPDATE  master.merch_level2
+             SET     merch_level2_name = 'DMS - '||merch_level2_name, updated_user = 'SYSTEM', updated_ts = NOW()
+             WHERE   merch_level2_id   = rec_merch_level2.merch_level1_id
+             AND     banner_id         = rec_merch_level2.banner_id;
+        ELSEIF (rec_merch_level2.banner_id = 4) THEN
+             UPDATE  master.merch_level2
+             SET     merch_level2_name = 'MET - '||merch_level2_name, updated_user = 'SYSTEM', updated_ts = NOW()
+             WHERE   merch_level2_id   = rec_merch_level2.merch_level2_id
+             AND     banner_id         = rec_merch_level2.banner_id;
+        ELSEIF (rec_merch_level2.banner_id = 5) THEN
+             UPDATE  master.merch_level2
+             SET     merch_level2_name = 'WNZ - '||merch_level2_name, updated_user = 'SYSTEM', updated_ts = NOW()
+             WHERE   merch_level2_id   = rec_merch_level2.merch_level2_id
+             AND     banner_id         = rec_merch_level2.banner_id;
+        END IF;
+    END LOOP;
+    
+    /* 466 duplicates */
+    FOR  rec_merch_level3 IN cur_ml3_dup_banner_merch_names LOOP
+    
+        IF (rec_merch_level3.banner_id = 2) THEN 
+             UPDATE  master.merch_level3
+             SET     merch_level3_name = 'BWS - '||merch_level3_name, updated_user = 'SYSTEM', updated_ts = NOW()
+             WHERE   merch_level3_id   = rec_merch_level3.merch_level3_id
+             AND     banner_id         = rec_merch_level3.banner_id;
+        ELSEIF (rec_merch_level3.banner_id = 3) THEN
+             UPDATE  master.merch_level3
+             SET     merch_level3_name = 'DMS - '||merch_level3_name, updated_user = 'SYSTEM', updated_ts = NOW()
+             WHERE   merch_level3_id   = rec_merch_level3.merch_level1_id
+             AND     banner_id         = rec_merch_level3.banner_id;
+        ELSEIF (rec_merch_level3.banner_id = 4) THEN
+             UPDATE  master.merch_level3
+             SET     merch_level3_name = 'MET - '||merch_level3_name, updated_user = 'SYSTEM', updated_ts = NOW()
+             WHERE   merch_level3_id   = rec_merch_level3.merch_level3_id
+             AND     banner_id         = rec_merch_level3.banner_id;
+        ELSEIF (rec_merch_level3.banner_id = 5) THEN
+             UPDATE  master.merch_level3
+             SET     merch_level3_name = 'WNZ - '||merch_level3_name, updated_user = 'SYSTEM', updated_ts = NOW()
+             WHERE   merch_level3_id   = rec_merch_level3.merch_level3_id
+             AND     banner_id         = rec_merch_level3.banner_id;
+        END IF;
+    END LOOP;	
+    	
+    	
+	RETURN 0;
+
+
+EXCEPTION 
+    WHEN OTHERS THEN
+         INSERT INTO staging.error_logs(error_id, error_function_name, error_step_number, error_state, error_msg, primarykeyid) 
+         VALUES(nextval('staging.error_logs_pk_seq'), 'fn_merch_level_changes', v_step, SQLSTATE, SQLERRM, NULL);
+         RETURN 1;
+END;
+$function$
+;

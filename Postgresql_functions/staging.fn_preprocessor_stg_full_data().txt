@@ -1,0 +1,61 @@
+CREATE OR REPLACE FUNCTION staging.fn_preprocessor_stg_full_data()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step              INT;
+    v_present           INT;
+	cur_perf_weekly_part_tabs CURSOR FOR
+    SELECT   table_schema||'.'||table_name as inputtab 
+    FROM     information_schema.tables 
+	WHERE    table_name like 'stg_perf_weekly_merch_level1_%'
+	OR       table_name like 'stg_perf_weekly_merch_level2_%'
+	OR       table_name like 'stg_perf_weekly_merch_level3_%'
+	OR       table_name like 'perf_weekly_merch_level1_%'
+	OR       table_name like 'perf_weekly_merch_level2_%'
+	OR       table_name like 'perf_weekly_merch_level3_%';
+	
+	cur_perf_weekly_trgs CURSOR FOR
+	SELECT   'DROP TRIGGER '||trigger_name||' ON '||trigger_schema||'.'||event_object_table as inputtrg
+    FROM     information_schema.triggers 
+	WHERE    trigger_name like 'trg_stg_perf_weekly_merch_level%'
+	OR       trigger_name like 'trg_perf_weekly_merch_level%';
+	
+BEGIN
+    v_step := 0;
+	
+	TRUNCATE staging.stg_str_merch_lvl3_skuefficiency RESTART IDENTITY CASCADE;
+	TRUNCATE staging.stg_str_merch_lvl3_adjacency RESTART IDENTITY CASCADE;
+	TRUNCATE staging.stg_str_merch_lvl3_planogram RESTART IDENTITY CASCADE;
+	TRUNCATE staging.stg_str_merch_lvl2_planogram RESTART IDENTITY CASCADE;
+	TRUNCATE staging.stg_str_merch_lvl1_planogram RESTART IDENTITY CASCADE;
+	TRUNCATE staging.stg_store_demographics RESTART IDENTITY CASCADE;
+	TRUNCATE staging.stg_perf_weekly_merch_level3 RESTART IDENTITY CASCADE;
+	TRUNCATE staging.stg_perf_weekly_merch_level2 RESTART IDENTITY CASCADE;
+	TRUNCATE staging.stg_perf_weekly_merch_level1 RESTART IDENTITY CASCADE;
+	TRUNCATE staging.stg_merch_level_capacity RESTART IDENTITY CASCADE;
+	TRUNCATE staging.stg_merch_level3 RESTART IDENTITY CASCADE;
+	TRUNCATE staging.stg_merch_level2 RESTART IDENTITY CASCADE;
+	TRUNCATE staging.stg_merch_level1 RESTART IDENTITY CASCADE;
+	TRUNCATE staging.stg_store RESTART IDENTITY CASCADE;
+	TRUNCATE staging.stg_fiscal_week RESTART IDENTITY CASCADE;
+	TRUNCATE staging.stg_banner RESTART IDENTITY CASCADE;
+	
+	FOR rec_perf_weekly_part_tabs IN cur_perf_weekly_part_tabs LOOP
+	    EXECUTE FORMAT(E'DROP TABLE %s',  rec_perf_weekly_part_tabs.inputtab);
+	END LOOP;
+	
+	FOR rec_perf_weekly_trgs IN cur_perf_weekly_trgs LOOP
+	    EXECUTE FORMAT(E'%s',  rec_perf_weekly_trgs.inputtrg);
+	END LOOP;
+	
+	v_step := 1;    
+	RETURN 0;	
+EXCEPTION 
+    WHEN OTHERS THEN
+         INSERT INTO staging.error_logs(error_id, error_function_name, error_step_number, error_state, error_msg, primarykeyid) 
+         VALUES(nextval('staging.error_logs_pk_seq'), 'fn_preprocessor_stg_full_data', v_step, sqlstate, sqlerrm, v_step);
+		 RETURN 1;
+END;
+$function$
+;

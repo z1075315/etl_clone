@@ -1,0 +1,126 @@
+CREATE OR REPLACE FUNCTION staging.fn_delta_load_to_master_merch_level1()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step              INT;
+	v_present           INT;
+    cur_stg_merch_level1 CURSOR FOR
+    SELECT   merch_level1_id,
+	         merch_level1_name,
+	         merch_level1_desc,
+	         active_f,
+	         retailer_merch_level1_id,
+	         attr_1,
+	         attr_2,
+	         attr_3,
+	         attr_4,
+	         attr_5,
+	         attr_6,
+	         attr_7,
+	         attr_8,
+	         attr_9,
+	         attr_10,
+	         merch_type,
+	         delete_f,
+	         banner_id,
+	         created_user,
+	         created_ts,
+	         updated_user,
+	         updated_ts
+    FROM     staging.stg_merch_level1
+	WHERE    updated_ts > (NOW()- INTERVAL '7 days');
+BEGIN
+    v_step := 1;
+    FOR rec_cur_stg_merch_level1 IN cur_stg_merch_level1 LOOP
+	    BEGIN
+		    SELECT   COUNT(1)
+		    INTO     v_present
+		    FROM     master.merch_level1
+		    WHERE    merch_level1_id = rec_cur_stg_merch_level1.merch_level1_id;
+		    
+		    IF (v_present = 1) THEN
+		         UPDATE   master.merch_level1
+				 SET      merch_level1_name        = rec_cur_stg_merch_level1.merch_level1_name        ,
+	                      merch_level1_desc        = rec_cur_stg_merch_level1.merch_level1_desc        ,
+	                      active_f                 = rec_cur_stg_merch_level1.active_f                 ,
+	                      retailer_merch_level1_id = rec_cur_stg_merch_level1.merch_level1_id          ,
+	                      attr_1                   = rec_cur_stg_merch_level1.attr_1                   ,
+	                      attr_2                   = rec_cur_stg_merch_level1.attr_2                   ,
+	                      attr_3                   = rec_cur_stg_merch_level1.attr_3                   ,
+	                      attr_4                   = rec_cur_stg_merch_level1.attr_4                   ,
+	                      attr_5                   = rec_cur_stg_merch_level1.attr_5                   ,
+	                      attr_6                   = rec_cur_stg_merch_level1.attr_6                   ,
+	                      attr_7                   = rec_cur_stg_merch_level1.attr_7                   ,
+	                      attr_8                   = rec_cur_stg_merch_level1.attr_8                   ,
+	                      attr_9                   = rec_cur_stg_merch_level1.attr_9                   ,
+	                      attr_10                  = rec_cur_stg_merch_level1.attr_10                  ,
+	                      merch_type               = rec_cur_stg_merch_level1.merch_type               ,
+	                      delete_f                 = rec_cur_stg_merch_level1.delete_f                 ,
+	                      banner_id                = rec_cur_stg_merch_level1.banner_id                ,
+	                      created_user             = rec_cur_stg_merch_level1.created_user             ,
+	                      created_ts               = rec_cur_stg_merch_level1.created_ts               ,
+	                      updated_user             = rec_cur_stg_merch_level1.updated_user             ,
+	                      updated_ts               = rec_cur_stg_merch_level1.updated_ts               
+				 WHERE    merch_level1_id          = rec_cur_stg_merch_level1.merch_level1_id;
+		    ELSE
+			     INSERT INTO master.merch_level1 
+			          (merch_level1_id,
+	                   merch_level1_name,
+	                   merch_level1_desc,
+	                   active_f,
+	                   retailer_merch_level1_id,
+	                   attr_1,
+	                   attr_2,
+	                   attr_3,
+	                   attr_4,
+	                   attr_5,
+	                   attr_6,
+	                   attr_7,
+	                   attr_8,
+	                   attr_9,
+	                   attr_10,
+	                   merch_type,
+	                   delete_f,
+	                   banner_id,
+	                   created_user,
+	                   created_ts,
+	                   updated_user,
+	                   updated_ts)
+                 VALUES 
+			          (rec_cur_stg_merch_level1.merch_level1_id,
+	                   rec_cur_stg_merch_level1.merch_level1_name,
+	                   rec_cur_stg_merch_level1.merch_level1_desc,
+	                   rec_cur_stg_merch_level1.active_f,
+	                   rec_cur_stg_merch_level1.merch_level1_id,
+	                   rec_cur_stg_merch_level1.attr_1,
+	                   rec_cur_stg_merch_level1.attr_2,
+	                   rec_cur_stg_merch_level1.attr_3,
+	                   rec_cur_stg_merch_level1.attr_4,
+	                   rec_cur_stg_merch_level1.attr_5,
+	                   rec_cur_stg_merch_level1.attr_6,
+	                   rec_cur_stg_merch_level1.attr_7,
+	                   rec_cur_stg_merch_level1.attr_8,
+	                   rec_cur_stg_merch_level1.attr_9,
+	                   rec_cur_stg_merch_level1.attr_10,
+	                   rec_cur_stg_merch_level1.merch_type,
+	                   rec_cur_stg_merch_level1.delete_f,
+	                   rec_cur_stg_merch_level1.banner_id,
+	                   rec_cur_stg_merch_level1.created_user,
+	                   rec_cur_stg_merch_level1.created_ts,
+	                   rec_cur_stg_merch_level1.updated_user,
+	                   rec_cur_stg_merch_level1.updated_ts);
+
+		    END IF;       
+	    EXCEPTION 
+            WHEN OTHERS THEN
+                 INSERT INTO staging.error_logs(error_id, error_function_name, error_step_number, error_state, error_msg, primarykeyid) 
+                 VALUES(nextval('staging.error_logs_pk_seq'), 'fn_delta_load_to_master_merch_level1', v_step, sqlstate, sqlerrm, rec_cur_stg_merch_level1.merch_level1_id);
+				 RETURN 1;
+	    END;
+    END LOOP;
+    v_step := 2;
+	RETURN 0;
+END;
+$function$
+;

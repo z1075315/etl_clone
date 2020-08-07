@@ -1,0 +1,53 @@
+CREATE OR REPLACE FUNCTION staging.fn_delta_load_to_master_perf_weekly_merch_level1()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step              INT;
+	v_present           INT;
+    v_week_id           INT;
+	v_del_week_id       INT;
+	rec_perf_weekly     master.perf_weekly_merch_level1%rowtype;
+    cur_stg_perf_weekly_merch_level1 CURSOR(p_week_id INT) FOR
+    SELECT   *
+    FROM     staging.stg_perf_weekly_merch_level1
+	WHERE    week_id >= p_week_id;
+BEGIN
+
+	SELECT   min(week_id)
+	INTO     v_week_id
+	FROM     staging.csv_perf_weekly_merch_level1;
+
+    DELETE   FROM master.perf_weekly_merch_level1
+    WHERE    week_id >= v_week_id;
+
+	SELECT   week_id - 160
+    INTO     v_del_week_id
+    FROM     master.fiscal_week fw, 
+             admin.data_period dp
+    WHERE    fw.week_begin_date = dp.etl_data_start_date
+    AND      fw.week_end_date   = dp.etl_data_end_date;
+
+    DELETE   FROM master.perf_weekly_merch_level1
+    WHERE    week_id < v_del_week_id; 	
+	
+    v_step := 1;
+    FOR rec_cur_stg_perf_weekly_merch_level1 IN cur_stg_perf_weekly_merch_level1(v_week_id) LOOP
+        BEGIN
+		    rec_perf_weekly := rec_cur_stg_perf_weekly_merch_level1;
+		
+		    INSERT INTO master.perf_weekly_merch_level1
+		    VALUES (rec_perf_weekly.*);
+		
+	    EXCEPTION 
+            WHEN OTHERS THEN
+                 INSERT INTO staging.error_logs(error_id, error_function_name, error_step_number, error_state, error_msg, primarykeyid) 
+                 VALUES(nextval('staging.error_logs_pk_seq'), 'fn_delta_load_to_master_perf_weekly_merch_level1', v_step, sqlstate, sqlerrm, rec_perf_weekly.week_id||'-'||rec_perf_weekly.merch_level1_id||'-'||rec_perf_weekly.store_id);
+				 RETURN 1;
+	    END;
+    END LOOP;
+    v_step := 2;
+	RETURN 0;
+END;
+$function$
+;

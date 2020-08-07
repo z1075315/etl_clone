@@ -1,0 +1,77 @@
+CREATE OR REPLACE FUNCTION staging.fn_full_load_to_stg_str_merch_lvl2_planogram()
+ RETURNS integer
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_step              INT;
+	v_count             INT;
+    cur_csv_str_merch_lvl2_planogram CURSOR FOR
+    SELECT planogram_id,
+	       store_id,
+	       merch_level2_id,
+	       pog_id,
+	       pog_assignment_eff_start_date,
+	       pog_assignment_eff_end_date,
+	       flr_plan_eff_start_date,
+	       status,
+	       footage,
+	       created_user,
+	       created_ts,
+	       updated_user,
+	       updated_ts
+    FROM   staging.csv_str_merch_lvl2_planogram;
+BEGIN
+    v_step := 1;
+	
+	SELECT   COUNT(1)
+	INTO     v_count
+	FROM     staging.csv_str_merch_lvl2_planogram;
+	
+	IF (v_count = 0) THEN
+	     RETURN 0;
+	END IF;
+	
+	TRUNCATE staging.stg_str_merch_lvl2_planogram RESTART IDENTITY CASCADE;
+	
+    FOR rec_cur_csv_str_merch_lvl2_planogram IN cur_csv_str_merch_lvl2_planogram LOOP
+        BEGIN
+            INSERT INTO staging.stg_str_merch_lvl2_planogram 
+			     (planogram_id,
+	              store_id,
+	              merch_level2_id,
+	              pog_id,
+	              pog_assignment_eff_start_date,
+	              pog_assignment_eff_end_date,
+	              flr_plan_eff_start_date,
+	              status,
+	              footage,
+	              created_user,
+	              created_ts,
+	              updated_user,
+	              updated_ts)
+            VALUES 
+			     (rec_cur_csv_str_merch_lvl2_planogram.planogram_id,
+	              rec_cur_csv_str_merch_lvl2_planogram.store_id,
+	              rec_cur_csv_str_merch_lvl2_planogram.merch_level2_id,
+	              rec_cur_csv_str_merch_lvl2_planogram.pog_id,
+	              rec_cur_csv_str_merch_lvl2_planogram.pog_assignment_eff_start_date,
+	              rec_cur_csv_str_merch_lvl2_planogram.pog_assignment_eff_end_date,
+	              rec_cur_csv_str_merch_lvl2_planogram.flr_plan_eff_start_date,
+	              rec_cur_csv_str_merch_lvl2_planogram.status,
+	              rec_cur_csv_str_merch_lvl2_planogram.footage,
+	              rec_cur_csv_str_merch_lvl2_planogram.created_user,
+	              rec_cur_csv_str_merch_lvl2_planogram.created_ts,
+	              rec_cur_csv_str_merch_lvl2_planogram.updated_user,
+	              rec_cur_csv_str_merch_lvl2_planogram.updated_ts);
+	    EXCEPTION 
+            WHEN OTHERS THEN
+                 INSERT INTO staging.error_logs(error_id, error_function_name, error_step_number, error_state, error_msg, primarykeyid) 
+                 VALUES(nextval('staging.error_logs_pk_seq'), 'fn_full_load_to_stg_str_merch_lvl2_planogram', v_step, sqlstate, sqlerrm, rec_cur_csv_str_merch_lvl2_planogram.planogram_id||'-'||rec_cur_csv_str_merch_lvl2_planogram.store_id||'-'||rec_cur_csv_str_merch_lvl2_planogram.merch_level2_id);
+				 RETURN 1;
+	    END;
+    END LOOP;
+    v_step := 2;
+	RETURN 0;
+END;
+$function$
+;
