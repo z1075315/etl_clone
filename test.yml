@@ -26,28 +26,28 @@ steps:
     targetType: 'inline'
     script: |
       # Write your commands here
-      for f in $(git diff --name-only HEAD HEAD~20)
+      for f in $(git diff --name-only HEAD~20 HEAD)
       do
         echo "$f"
         case "$_" in
                 shell_scripts/*)
-                echo "this is A"
+                echo "Change done in shell"
                 #cp -r $(Build.SourcesDirectory)/A $(Build.ArtifactStagingDirectory)
                 ;;
                 config/*)
-                echo "this is B"
+                echo "Change done in config"
                 #cp -r $(Build.SourcesDirectory)/B $(Build.ArtifactStagingDirectory)
                 ;;
                 sql/*)
-                echo "this is C"
+                echo "Change done in sql"
                 #cp -r $(Build.SourcesDirectory)/C $(Build.ArtifactStagingDirectory)
                 ;;
                 Postgresql_functions/*)
-                echo "this is D"
+                echo "Change done in postgresql"
                 #cp -r $(Build.SourcesDirectory)/D $(Build.ArtifactStagingDirectory)
                 ;;
                 python/*)
-                echo "this is E"
+                echo "Change done in python"
                 #cp -r $(Build.SourcesDirectory)/D $(Build.ArtifactStagingDirectory)
                 ;;
         esac
