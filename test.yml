@@ -20,6 +20,34 @@ pool:
   demands: Agent.Name -equals Optumera_Dev_Linux01
   
 steps:
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      # Write your commands here
+      for f in $(git diff HEAD HEAD~ --name-only)
+      do
+        echo $f
+        case "$_" in
+                OptumeraETL/shell_scripts/*)
+                echo this is A
+                cp -r $(Build.SourcesDirectory)/A $(Build.ArtifactStagingDirectory)
+                ;;
+                
+                OptumeraETL/config/*)
+                echo this is B
+                cp -r $(Build.SourcesDirectory)/B $(Build.ArtifactStagingDirectory)
+                ;;
+                OptumeraETL/sql/*)
+                echo this is C
+                cp -r $(Build.SourcesDirectory)/C $(Build.ArtifactStagingDirectory)
+                ;;
+                OptumeraETL/Postgresql_functions/*)
+                echo this is d
+                cp -r $(Build.SourcesDirectory)/D $(Build.ArtifactStagingDirectory)
+                ;;
+        esac
+      done
 - task: CopyFiles@2
   displayName: 'Copy Files to: $(Build.ArtifactStagingDirectory)'
   inputs:
