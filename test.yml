@@ -26,7 +26,7 @@ steps:
     targetType: 'inline'
     script: |
       # Write your commands here
-      for f in $(git diff HEAD HEAD~25 --name-only)
+      for f in $(git diff HEAD~25 HEAD --name-only)
       do
         echo "$f"
         case "$_" in
