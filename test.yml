@@ -48,7 +48,11 @@ steps:
                 ;;
                 python/*)
                 echo "Change done in python"
-                #cp -r $(Build.SourcesDirectory)/D $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/python $(Build.ArtifactStagingDirectory)
                 ;;
         esac
       done
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'OptumeraETL_Artifact'
