@@ -24,7 +24,7 @@ steps:
 - task: Bash@3
   inputs:
     targetType: 'inline'
-    script:
+    script: |
       # Write your commands here
       for f in $(git diff --name-only HEAD~20 HEAD)
       do
