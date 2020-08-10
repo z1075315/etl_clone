@@ -48,13 +48,11 @@ steps:
                 ;;
                 python/*)
                 echo "Change done in python"
-                count=1
                 cp -r $(Build.SourcesDirectory)/python $(Build.ArtifactStagingDirectory)
                 ;;
         esac
       done
-      if [ count==1 ];
-      then
+      
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
