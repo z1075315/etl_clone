@@ -26,13 +26,13 @@ steps:
     targetType: 'inline'
     script: |
       # Write your commands here
-      for f in $(git diff --name-only --diff-filter=ACMRT HEAD~25 HEAD)
+      for f in $(git diff --name-only --diff-filter=ACMRT HEAD~5 HEAD)
       do
       echo "$f" 
         case "$_" in
                 shell_scripts/*)
                 echo "Change done in shell"
-                cp -r $(Build.SourcesDirectory)/shell_scripts/$f $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
                 ;;
                 config/*)
                 echo "Change done in config"
