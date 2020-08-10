@@ -32,7 +32,7 @@ steps:
         case "$_" in
                 shell_scripts/*)
                 echo "Change done in shell"
-                cp -r $(Build.SourcesDirectory)/shell_scripts/$f $(Build.ArtifactStagingDirectory)/shell_scripts
+                cp -r $(Build.SourcesDirectory)/shell_scripts/$f $(Build.ArtifactStagingDirectory)
                 ;;
                 config/*)
                 echo "Change done in config"
