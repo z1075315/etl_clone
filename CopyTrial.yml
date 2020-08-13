@@ -36,19 +36,19 @@ steps:
                 ;;
                 config/*)
                 echo "Change done in config"
-                cp -r $(Build.SourcesDirectory)/config $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
                 ;;
                 sql/*)
                 echo "Change done in sql"
-                cp -r $(Build.SourcesDirectory)/sql $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
                 ;;
                 Postgresql_functions/*)
                 echo "Change done in postgresql"
-                cp -r $(Build.SourcesDirectory)/Postgresql_functions $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
                 ;;
                 python/*)
                 echo "Change done in python"
-                cp -r $(Build.SourcesDirectory)/python $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
                 ;;
         esac
       done
