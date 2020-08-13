@@ -40,7 +40,7 @@ steps:
                 ;;
                 sql/*)
                 echo "Change done in sql"
-                cp -r $(Build.SourcesDirectory)/sql $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
                 ;;
                 Postgresql_functions/*)
                 echo "Change done in postgresql"
