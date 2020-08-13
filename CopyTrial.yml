@@ -32,32 +32,26 @@ steps:
         case "$_" in
                 shell_scripts/*)
                 echo "Change done in shell"
-                cp -r $(Build.SourcesDirectory)/shell_scripts $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
                 ;;
                 config/*)
                 echo "Change done in config"
-                cp -r $(Build.SourcesDirectory)/config $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
                 ;;
                 sql/*)
                 echo "Change done in sql"
-                cp -r $(Build.SourcesDirectory)/sql $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
                 ;;
                 Postgresql_functions/*)
                 echo "Change done in postgresql"
-                cp -r $(Build.SourcesDirectory)/Postgresql_functions $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
                 ;;
                 python/*)
                 echo "Change done in python"
-                cp -r $(Build.SourcesDirectory)/python $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
                 ;;
         esac
       done
-      
-- task: CopyFiles@2
-  inputs:
-    sourceFolder: '$(Build.SourcesDirectory)'
-    contents: '**/$(BuildConfiguration)/**/?(*.exe|*.dll|*.pdb)'
-    targetFolder: '$(Build.ArtifactStagingDirectory)'
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
