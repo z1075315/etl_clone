@@ -26,7 +26,7 @@ steps:
     targetType: 'inline'
     script: |
       # Write your commands here
-      for f in $(git diff --name-only --diff-filter=ACMRT HEAD~20 HEAD)
+      for f in $(git diff --name-only --diff-filter=ACMRT HEAD~50 HEAD)
       do
       echo "$f" 
         case "$_" in
@@ -40,7 +40,7 @@ steps:
                 ;;
                 sql/*)
                 echo "Change done in sql"
-                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/sql $(Build.ArtifactStagingDirectory)
                 ;;
                 Postgresql_functions/*)
                 echo "Change done in postgresql"
