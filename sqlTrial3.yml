@@ -1,0 +1,72 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - shell_scripts/*
+    - config/*
+    - sql/Adhoc_Performance_CHG98060/*
+    - sql/top_delta_mstr_str_merch/*
+    - sql/top_delta_perf_spc_wk_sku_eff/*
+    - sql/top_full_adj_merch_lvl_cap_plng/*
+    - sql/top_full_mstr_str_merch/*
+    - sql/top_full_perf_spc_wk_sku_eff/*
+    - sql/top_full_str_demog/*
+    - sql/top_one_time_fisc_wk_bnr/*
+    - Postgresql_functions/*
+    - python/*
+
+
+pool:
+  name: Optumera
+  demands: Agent.Name -equals Optumera_Dev_Linux01
+  
+steps:
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      # Write your commands here
+      for f in $(git diff --name-only --diff-filter=ACMRT HEAD~50 HEAD)
+      do
+      echo "$f" 
+        case "$_" in
+                shell_scripts/*)
+                echo "Change done in shell"
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
+                ;;
+                config/*)
+                echo "Change done in config"
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
+                ;;
+                sql/*)
+                echo "Change done in sql"
+                cp -r $(Build.SourcesDirectory)/Adhoc_Performance_CHG98060/$f $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/top_delta_mstr_str_merch/$f $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/top_delta_perf_spc_wk_sku_eff/$f $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/top_full_adj_merch_lvl_cap_plng/$f $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/top_full_mstr_str_merch/$f $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/top_full_perf_spc_wk_sku_eff/$f $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/top_full_str_demog/$f $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/top_one_time_fisc_wk_bnr/$f $(Build.ArtifactStagingDirectory)
+                ;;
+                Postgresql_functions/*)
+                echo "Change done in postgresql"
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
+                ;;
+                python/*)
+                echo "Change done in python"
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
+                ;;
+        esac
+      done
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'OptumeraETL_Artifacts'
