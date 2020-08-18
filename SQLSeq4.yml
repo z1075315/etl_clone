@@ -11,9 +11,9 @@ trigger:
     include:
     - shell_scripts/*
     - config/*
-    - sql/Adhoc_Performance_CHG98060
-    - sql/top_delta_mstr_str_merch
-    - sql/top_delta_perf_spc_wk_sku_eff 
+    - sql/Adhoc_Performance_CHG98060/*
+    - sql/top_delta_mstr_str_merch/*
+    - sql/top_delta_perf_spc_wk_sku_eff/* 
     - Postgresql_functions/*
     - python/*
 
@@ -49,7 +49,7 @@ steps:
                 cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
                 ;;
                 sql/top_delta_perf_spc_wk_sku_eff/)
-                echo "Change done in sql"
+                echo $f
                 cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
                 ;;			
                 Postgresql_functions/*)
