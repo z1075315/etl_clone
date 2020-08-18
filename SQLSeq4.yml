@@ -28,7 +28,7 @@ steps:
     targetType: 'inline'
     script: |
       # Write your commands here
-      for f in $(git diff --name-only --diff-filter=ACMRT HEAD~ HEAD)
+      for f in $(git diff HEAD HEAD~ --name-only)
       do
       echo "$f" 
         case "$_" in
