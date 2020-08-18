@@ -1,5 +1,5 @@
 #!/bin/bash
 
-echo "Testing"
+echo "Testing_Completed"
 
 echo "Hello world"
