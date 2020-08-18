@@ -6,25 +6,96 @@
 trigger:
   branches:
     include:
-    - none
+    - master
+  paths:
+    include:
+    - shell_scripts/*
+    - config/*
+    - sql/Adhoc_Performance_CHG98060/*
+    - sql/top_delta_mstr_str_merch/*
+    - sql/top_delta_perf_spc_wk_sku_eff/*
+    - sql/top_full_adj_merch_lvl_cap_plng/*
+    - sql/top_full_mstr_str_merch/*
+    - sql/top_full_perf_spc_wk_sku_eff/*
+    - sql/top_full_str_demog/*
+    - sql/top_one_time_fisc_wk_bnr/*
+    - Postgresql_functions/*
+    - python/*
+
 
 pool:
   name: Optumera
   demands: Agent.Name -equals Optumera_Dev_Linux01
   
 steps:
-- task: CopyFiles@2
-  displayName: 'Copy Files to: $(Build.ArtifactStagingDirectory)'
+- task: Bash@3
   inputs:
-    SourceFolder: '$(Build.SourcesDirectory)'
-    Contents: |
-      **
-      !.git/**/*
-    TargetFolder: '$(Build.ArtifactStagingDirectory)'
-    OverWrite: true
-    #CleanTargetFolder: true
-    #preserveTimestamp: false
+    targetType: 'inline'
+    script: |
+      # Write your commands here
+      for f in $(git diff HEAD HEAD~5 --name-only)
+      do
+      echo "$f" 
+        case "$_" in
+                shell_scripts/*)
+                echo "Change done in shell"
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
+                ;;
+                config/*)
+                echo "Change done in config"
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
+                ;;
+                sql/Adhoc_Performance_CHG98060/*)
+                echo $f
+                mkdir -p $(Build.ArtifactStagingDirectory)/sql/Adhoc_Performance_CHG98060
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)/$f
+                ;;
+                sql/top_delta_mstr_str_merch/*)
+                echo $f
+                mkdir -p $(Build.ArtifactStagingDirectory)/sql/top_delta_mstr_str_merch
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)/$f
+                ;;
+                sql/top_delta_perf_spc_wk_sku_eff/*)
+                echo $f
+                mkdir -p $(Build.ArtifactStagingDirectory)/sql/top_delta_perf_spc_wk_sku_eff
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)/$f
+                ;;
+                sql/top_full_adj_merch_lvl_cap_plng/*)
+                echo $f
+                mkdir -p $(Build.ArtifactStagingDirectory)/sql/top_full_adj_merch_lvl_cap_plng
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)/$f
+                ;;
+                sql/top_full_mstr_str_merch/*)
+                echo $f
+                mkdir -p $(Build.ArtifactStagingDirectory)/sql/top_full_mstr_str_merch
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)/$f
+                ;;
+                sql/top_full_perf_spc_wk_sku_eff/*)
+                echo $f
+                mkdir -p $(Build.ArtifactStagingDirectory)/sql/top_full_perf_spc_wk_sku_eff
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)/$f
+                ;;
+                sql/top_full_str_demog/*)
+                echo $f
+                mkdir -p $(Build.ArtifactStagingDirectory)/sql/top_full_str_demog
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)/$f
+                ;;
+                sql/top_one_time_fisc_wk_bnr/*)
+                echo $f
+                mkdir -p $(Build.ArtifactStagingDirectory)/sql/top_one_time_fisc_wk_bnr
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)/$f
+                ;;				
+                Postgresql_functions/*)
+                echo "Change done in postgresql"
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
+                ;;
+                python/*)
+                echo "Change done in python"
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
+                ;;
+        esac
+      done
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    artifactName: optumeraETL_artifact
+    ArtifactName: 'OptumeraETL_Artifacts'
