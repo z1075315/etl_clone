@@ -1,2 +1,2 @@
 --Testing SQL
---Testing PublishNewChanges
+--Testing PublishNew
