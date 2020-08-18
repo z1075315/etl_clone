@@ -50,7 +50,7 @@ steps:
                 ;;
                 sql/top_delta_perf_spc_wk_sku_eff/*)
                 echo $f
-                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)
+                cp -r $(Build.SourcesDirectory)/$f $(Build.ArtifactStagingDirectory)/$f
                 ;;			
                 Postgresql_functions/*)
                 echo "Change done in postgresql"
