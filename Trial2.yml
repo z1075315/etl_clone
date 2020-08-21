@@ -11,14 +11,7 @@ trigger:
     include:
     - shell_scripts/*
     - config/*
-    - sql/Adhoc_Performance_CHG98060/
-    - sql/top_delta_mstr_str_merch/
-    - sql/top_delta_perf_spc_wk_sku_eff/
-    - sql/top_full_adj_merch_lvl_cap_plng/
-    - sql/top_full_mstr_str_merch/
-    - sql/top_full_perf_spc_wk_sku_eff/
-    - sql/top_full_str_demog/
-    - sql/top_one_time_fisc_wk_bnr/
+    - sql/*
     - Postgresql_functions/*
     - python/*
 
