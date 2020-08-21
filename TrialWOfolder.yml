@@ -18,7 +18,7 @@ trigger:
 
 pool:
   name: Optumera
-  demands: Agent.Name -equals Optumera_Dev_Linux01
+  demands: Agent.Name -equals Optumera_Dev_Linux01_Agent2
   
 steps:
 - task: Bash@3
